@@ -6,16 +6,12 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 
 **Disclaimer:** This is fully untested software, and we expect for it not to work: nevertheless, open an issue if it doesn't work correctly (or better yet, try to fix it and send a PR)
 
-## How to build 
+## How to build and install
 
 - Install OpenBSD (most likely in a VM)
 - Install the Rust toolchain
 - Clone this repository into `/usr/src`
 - Run `make obj && make build`
-
-## How to install after building
-
-- (Follow `How to build`)
 - Run `cd /usr/src && sysmerge`
 - Run `cd /dev && ./MAKEDEV all`
 - Run `reboot` (just to manage running processes)
@@ -23,16 +19,23 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 
 ## How to create disk images
 
-- (Follow `How to build`)
+- (Follow `How to build and install`)
 - Run `export RELDIR=your-releasedir`
 - Run `cd /usr/src/distrib/$(machine)/iso && make`
 - Run `make install`
+
+## How to run the testing suite
+- Run `./run-tests.csh` or `csh run-tests.csh`
 
 ---
 
 ## What was rewritten?
 - `echo`
 - `chroot`
+
+## Soon to be rewritten...
+- `bc`
+- `csh`
 
 ## How can I contribute?
 
