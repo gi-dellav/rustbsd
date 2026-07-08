@@ -2,90 +2,81 @@ use std::env;
 use std::io::{self, Write};
 use std::process;
 
-fn escape(s: &str) -> i32 {
-    let mut chars = s.chars().peekable();
+fn write_escaped(writer: &mut impl Write, s: &str) -> io::Result<bool> {
+    let mut chars = s.chars();
 
     while let Some(ch) = chars.next() {
         if ch != '\\' {
-            print!("{}", ch);
+            write!(writer, "{ch}")?;
             continue;
         }
 
-        match chars.next() {
-            None => {
-                print!("\\");
-                return 0;
-            }
-            Some('\\') => print!("\\"),
-            Some('a') => print!("\x07"),
-            Some('b') => print!("\x08"),
-            Some('c') => return -1,
-            Some('e') => print!("\x1b"),
-            Some('f') => print!("\x0c"),
-            Some('n') => print!("\n"),
-            Some('r') => print!("\r"),
-            Some('t') => print!("\t"),
-            Some('v') => print!("\x0b"),
-            Some('0') => {
-                let mut val: u8 = 0;
+        let Some(next) = chars.next() else {
+            write!(writer, "\\")?;
+            return Ok(true);
+        };
+
+        match next {
+            '\\' => write!(writer, "\\")?,
+            'a' => write!(writer, "\x07")?,
+            'b' => write!(writer, "\x08")?,
+            'c' => return Ok(false),
+            'e' => write!(writer, "\x1b")?,
+            'f' => write!(writer, "\x0c")?,
+            'n' => write!(writer, "\n")?,
+            'r' => write!(writer, "\r")?,
+            't' => write!(writer, "\t")?,
+            'v' => write!(writer, "\x0b")?,
+            '0' => {
+                let mut oct = String::new();
                 for _ in 0..3 {
-                    if let Some(&d) = chars.peek() {
-                        if d >= '0' && d <= '7' {
-                            val = val * 8 + (d as u8 - b'0');
+                    match chars.as_str().as_bytes().first() {
+                        Some(&b) if matches!(b, b'0'..=b'7') => {
+                            oct.push(b as char);
                             chars.next();
-                        } else {
-                            break;
                         }
+                        _ => break,
                     }
                 }
-                print!("{}", val as char);
-            }
-            Some('x') => {
-                if let Some(&d) = chars.peek() {
-                    if d.is_ascii_hexdigit() {
-                        let mut val: u8 = 0;
-                        for _ in 0..2 {
-                            if let Some(&h) = chars.peek() {
-                                if h.is_ascii_hexdigit() {
-                                    val *= 16;
-                                    val += match h {
-                                        '0'..='9' => h as u8 - b'0',
-                                        'a'..='f' => h as u8 - b'a' + 10,
-                                        'A'..='F' => h as u8 - b'A' + 10,
-                                        _ => unreachable!(),
-                                    };
-                                    chars.next();
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
-                        print!("{}", val as char);
-                    } else {
-                        print!("\\x");
-                    }
-                } else {
-                    print!("\\x");
+                if oct.is_empty() {
+                    write!(writer, "\0")?;
+                } else if let Ok(val) = u8::from_str_radix(&oct, 8) {
+                    write!(writer, "{}", val as char)?;
                 }
             }
-            Some(other) => {
-                print!("\\{}", other);
+            'x' => {
+                let mut hex = String::new();
+                for _ in 0..2 {
+                    match chars.as_str().as_bytes().first() {
+                        Some(&b) if b.is_ascii_hexdigit() => {
+                            hex.push(b as char);
+                            chars.next();
+                        }
+                        _ => break,
+                    }
+                }
+                if hex.is_empty() {
+                    write!(writer, "\\x")?;
+                } else if let Ok(val) = u8::from_str_radix(&hex, 16) {
+                    write!(writer, "{}", val as char)?;
+                }
             }
+            other => write!(writer, "\\{other}")?,
         }
     }
 
-    0
+    Ok(true)
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut nflag = false;
-    let mut eflag = false;
-    let mut idx = 1;
+    let mut no_newline = false;
+    let mut escape = false;
+    let mut i = 1;
 
-    while idx < args.len() {
-        let arg = &args[idx];
-        if arg.is_empty() || !arg.starts_with('-') {
+    while i < args.len() {
+        let arg = &args[i];
+        if arg.is_empty() || !arg.starts_with('-') || arg == "-" {
             break;
         }
 
@@ -94,55 +85,53 @@ fn main() {
             break;
         }
 
-        let mut parsed = false;
+        let mut valid = true;
         for ch in flags.chars() {
             match ch {
-                'E' => {
-                    eflag = false;
-                    parsed = true;
-                }
-                'e' => {
-                    eflag = true;
-                    parsed = true;
-                }
-                'n' => {
-                    nflag = true;
-                    parsed = true;
-                }
+                'E' => escape = false,
+                'e' => escape = true,
+                'n' => no_newline = true,
                 _ => {
-                    eflag = false;
-                    nflag = false;
-                    parsed = false;
+                    no_newline = false;
+                    escape = false;
+                    valid = false;
                     break;
                 }
             }
         }
-        if !parsed {
+        if !valid {
             break;
         }
-        idx += 1;
+        i += 1;
     }
 
+    let stdout = io::stdout();
+    let mut writer = stdout.lock();
     let mut first = true;
-    while idx < args.len() {
+
+    for arg in &args[i..] {
         if !first {
-            print!(" ");
+            write!(writer, " ").ok();
         }
         first = false;
 
-        if eflag {
-            if escape(&args[idx]) != 0 {
-                let _ = io::stdout().flush();
-                process::exit(0);
+        if escape {
+            match write_escaped(&mut writer, arg) {
+                Ok(true) => {}
+                Ok(false) => {
+                    writer.flush().ok();
+                    process::exit(0);
+                }
+                Err(_) => process::exit(1),
             }
         } else {
-            print!("{}", args[idx]);
+            write!(writer, "{arg}").ok();
         }
-        idx += 1;
     }
 
-    if !nflag {
-        println!();
+    if !no_newline {
+        writeln!(writer).ok();
+    } else {
+        writer.flush().ok();
     }
-    let _ = io::stdout().flush();
 }
