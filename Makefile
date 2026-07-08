@@ -26,7 +26,7 @@
 # "make build" target supplied here. Good luck.
 #
 # 5) If you want to setup a cross-build environment, there is a "cross-gcc"
-# target available which upon completion of: 
+# target available which upon completion of:
 #	"make -f Makefile.cross TARGET=<target> cross-gcc"
 # (where <target> is one of the names in the /sys/arch directory) will produce
 # a set of compilation tools along with the includes in the /usr/cross/<target>

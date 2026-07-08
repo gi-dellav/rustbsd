@@ -1,5 +1,10 @@
-#	$OpenBSD: Makefile,v 1.3 1997/09/21 11:35:02 deraadt Exp $
+#	$OpenBSD$
 
 PROG=	echo
+CLEANFILES+=	target
+
+${PROG}:
+	cargo build --release
+	ln -sf target/release/${PROG} ${PROG}
 
 .include <bsd.prog.mk>
