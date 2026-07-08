@@ -70,18 +70,15 @@ pub fn unescape(s: &str) -> (String, bool) {
     let mut buf = Vec::with_capacity(s.len());
     match write_escaped(&mut buf, s) {
         Ok(true) => {
-            let result = String::from_utf8(buf).unwrap_or_else(|e| {
-                String::from_utf8_lossy(&e.into_bytes()).into_owned()
-            });
+            let result = String::from_utf8(buf)
+                .unwrap_or_else(|e| String::from_utf8_lossy(&e.into_bytes()).into_owned());
             (result, true)
         }
         Ok(false) => {
-            let result = String::from_utf8(buf).unwrap_or_else(|e| {
-                String::from_utf8_lossy(&e.into_bytes()).into_owned()
-            });
+            let result = String::from_utf8(buf)
+                .unwrap_or_else(|e| String::from_utf8_lossy(&e.into_bytes()).into_owned());
             (result, false)
         }
         Err(_) => (String::new(), true),
     }
 }
-

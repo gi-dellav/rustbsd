@@ -6,3 +6,7 @@ edition = "2021"
 [[bin]]
 name = "chroot"
 path = "src/main.rs"
+
+[dependencies]
+puffyrs = { path = "../../puffyrs" }
+libc = "0.2"
