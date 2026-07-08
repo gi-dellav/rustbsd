@@ -1,7 +1,10 @@
-#	$OpenBSD: Makefile,v 1.3 1997/09/21 11:43:30 deraadt Exp $
+#	$OpenBSD$
 
 PROG=	chroot
-MAN=	chroot.8
-LDSTATIC=	${STATIC}
+CLEANFILES+=	target
+
+${PROG}:
+	cargo build --release
+	ln -sf target/release/${PROG} ${PROG}
 
 .include <bsd.prog.mk>

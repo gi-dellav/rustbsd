@@ -37,6 +37,8 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 
 Just take any userspace program that you are interested in, implement it in Rust and send a PR.
 
+(Note: before writing a userspace program, read `bin/echo` as it's the simplest example)
+
 ## How important is backwards compatibility?
 
 Not too much:
@@ -48,3 +50,48 @@ Not too much:
 ## Can we add new userspace programs?
 
 Yes, but only if we think that they can be widely used on most RustBSD installations.
+
+## What is PuffyRS?
+
+PuffyRS (found at `puffyrs/`) is a Rust library designed to help us write better userspace tooling using idiomatic Rust.
+
+## How to add a Rust project to the userland
+
+1. Create a directory for your program under the appropriate location (e.g. `bin/myprog/` for a utility that belongs in `/bin`).
+
+2. Initialize a Rust project inside it:
+   ```
+   cargo init --name myprog bin/myprog
+   ```
+
+3. Ensure the `Cargo.toml` declares a binary matching your program name:
+   ```toml
+   [package]
+   name = "myprogrs"
+   version = "0.1.0"
+   edition = "2021"
+
+   [[bin]]
+   name = "myprog"
+   path = "src/main.rs"
+   ```
+
+4. Create a `Makefile` in your program's directory that invokes `cargo` and integrates with the BSD build system:
+   ```makefile
+   PROG=	myprog
+   CLEANFILES+=	target
+
+   ${PROG}:
+   	cargo build --release
+   	ln -sf target/release/${PROG} ${PROG}
+
+   .include <bsd.prog.mk>
+   ```
+
+5. Add your program's directory name to the `SUBDIR` list in the parent `Makefile` (e.g. `bin/Makefile`), so it gets built alongside the rest of the userland.
+
+6. Rebuild and install as usual:
+   ```
+   make obj && make build
+   cd /usr/src && sysmerge
+   ```
