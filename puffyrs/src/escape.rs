@@ -1,5 +1,8 @@
 use std::io::{self, Write};
 
+/// Writes `s` to `writer`, expanding C-style backslash escapes (`\n`, `\t`, `\\`, `\xNN`,
+/// `\0NNN`, etc.). Returns `Ok(false)` on `\c` (stop marker) to signal the caller to halt
+/// further processing.
 pub fn write_escaped(writer: &mut impl Write, s: &str) -> io::Result<bool> {
     let mut chars = s.chars();
 
@@ -66,6 +69,9 @@ pub fn write_escaped(writer: &mut impl Write, s: &str) -> io::Result<bool> {
     Ok(true)
 }
 
+/// Unescapes a full string in memory by delegating to `write_escaped` with a `Vec<u8>`
+/// buffer. Returns the resulting string and a flag indicating whether a `\c` stop marker
+/// was encountered (true = no stop, false = stopped early).
 pub fn unescape(s: &str) -> (String, bool) {
     let mut buf = Vec::with_capacity(s.len());
     match write_escaped(&mut buf, s) {

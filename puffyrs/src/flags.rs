@@ -11,20 +11,27 @@ struct FlagDef {
     kind: FlagKind,
 }
 
+/// Builder for registering boolean and string flags, then parsing an argument iterator
+/// (e.g. `std::env::args()`) into a `Parsed` result.
 pub struct FlagParser {
     flags: Vec<FlagDef>,
 }
 
+/// Holds parsed flag values and the remaining positional arguments. Provides typed
+/// accessors to query boolean and string flags by name.
 pub struct Parsed {
     values: HashMap<char, FlagKind>,
     args: Vec<String>,
 }
 
 impl FlagParser {
+    /// Creates an empty `FlagParser` with no flags registered.
     pub fn new() -> Self {
         Self { flags: Vec::new() }
     }
 
+    /// Registers a boolean flag identified by `name`. The flag is off by default unless
+    /// `default` is `true`. Returns `&mut Self` for builder-pattern chaining.
     pub fn bool(&mut self, name: char, default: bool) -> &mut Self {
         self.flags.push(FlagDef {
             name,
@@ -33,6 +40,8 @@ impl FlagParser {
         self
     }
 
+    /// Registers a string flag identified by `name` that expects a value argument
+    /// (e.g. `-o output.txt`). Returns `&mut Self` for builder-pattern chaining.
     pub fn string(&mut self, name: char) -> &mut Self {
         self.flags.push(FlagDef {
             name,
@@ -41,6 +50,9 @@ impl FlagParser {
         self
     }
 
+    /// Parses an iterator of string arguments (the first is expected to be the program
+    /// name and is discarded). Returns a `Parsed` containing resolved flag values and
+    /// any remaining positional arguments.
     pub fn parse<I>(&self, args: I) -> Parsed
     where
         I: IntoIterator<Item = String>,
@@ -158,6 +170,8 @@ impl FlagParser {
 }
 
 impl Parsed {
+    /// Returns `true` if the boolean flag named `name` was set, or `false` otherwise
+    /// (including when the flag was never registered).
     pub fn bool(&self, name: char) -> bool {
         self.values
             .get(&name)
@@ -165,6 +179,8 @@ impl Parsed {
             .unwrap_or(false)
     }
 
+    /// Returns the value of the string flag named `name`, or `None` if the flag was
+    /// not set or was never registered.
     pub fn string(&self, name: char) -> Option<&str> {
         self.values.get(&name).and_then(|v| match v {
             FlagKind::String(v) => v.as_deref(),
@@ -172,6 +188,7 @@ impl Parsed {
         })
     }
 
+    /// Returns the remaining positional arguments after all flags have been consumed.
     pub fn args(&self) -> &[String] {
         &self.args
     }

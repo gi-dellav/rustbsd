@@ -32,6 +32,7 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 
 ## What was rewritten?
 - `echo`
+- `chroot`
 
 ## How can I contribute?
 
