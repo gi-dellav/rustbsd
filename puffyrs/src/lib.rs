@@ -8,5 +8,11 @@ pub mod ffi;
 pub mod flags;
 /// Convenient I/O helpers for stdout/stderr output.
 pub mod io;
+/// Program–name extraction from argv[0].
+pub mod progname;
+/// Daemon signal–watching via `AtomicBool` + `signal(2)`.
+pub mod sig;
+/// OpenBSD `strtonum(3)`: bounded numeric parsing.
+pub mod strtonum;
 /// Byte-visibility rendering (`vis(3)` semantics, used by `cat -v`).
 pub mod vis;

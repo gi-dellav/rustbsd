@@ -12,11 +12,27 @@ Exactly what the title says: OpenBSD, with some parts rewritten (and some writte
 
 - *Safe*: Some high-safety components such as `init` and `doas` benefit from an high-quality Rust reimplementation.
 
+- *Updated*:
+  - rustBSD is synced daily with the upstream OpenBSD source code for all non-Rust components.
+  - rustBSD is compatible with OpenBSD's ports and xenocara package repositories.
+
+- *Rolling-release*: Everytime a major feature is reached in any of the packages developed by rustBSD and the entire system is tested, a new stable release is published.
+
 - *Declarative*: *fdecs* is a tool for flexible declarative system for rustBSD, managing packages, configurations, scripts, daemons and databases. *(not yet implemented)*
 
-- *Data-driven*: 
+- *Data-driven*:
   - *Datad* is our data layer daemon, built on top of SQLite, inspired by the IBM's AS/400 design. *(not yet implemented)*
-  - *Kvdb* is our in-memory lightweight key-value database, inspired by Redis. *(not yet implemented)*
+  - *Kvdb* is our in-memory lightweight key-value database, compatible with JSON and inspired by Redis. *(not yet implemented)*
+
+- *Reliable*:
+  - Built on top of OpenBSD, famous for its reliability
+  - *supervise* is our metrics-aware service supervisor, capable of managing safe reboots of critical processes *(not yet implemented)*
+
+- *Scalable*:
+  - *terascale* is a Linux server software for spawning and managing multiple rustBSD VMs *(not yet implemented)*
+  - *polyserverd* is a lightweight daemon for managing multiple rustBSD nodes, integrated with `terascale` *(not yet implemented)*
+  - *polyclientd* is a lightweight daemon for rustBSD nodes that allows to communicate with `polyserverd` *(not yet implemented)*
+  - *lbalanced* is a lightweight load balancer, integrated with `polyserverd` for splitting packets across multiple rustBSD nodes *(not yet implemented)*
 
 ## How to build and install
 
@@ -74,10 +90,14 @@ Exactly what the title says: OpenBSD, with some parts rewritten (and some writte
 ## Original tools incomings...
 
 - `datad`: sqlite-based background data layer
-- `datash`: interactive shell for accessing `datad`
 - `kvdb`: in-memory key-value database
-- `kvsh`: interactive shell for accessing `kvdb`
 - `fdecs`: flexible declarative system for rustBSD installations
+- `supervise`: reliable service supervisor
+- `polyclientd`: platform for managing multiple rustBSD nodes; *polyclientd* runs on the nodes
+- `polyserverd`: platform for managing multiple rustBSD nodes; *polyserverd* runs on the managers
+- `lbalanced`: lightweight load balancer daemon
+- `terascale`: Linux tool for managing rustBSD VMs
+
 
 ---
 

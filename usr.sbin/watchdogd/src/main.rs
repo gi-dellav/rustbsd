@@ -1,43 +1,23 @@
-use std::path::Path;
 use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc::{
     self, c_int, size_t,
     EOPNOTSUPP, MCL_CURRENT, MCL_FUTURE, PRIO_PROCESS, RLIMIT_STACK, SIGTERM,
 };
-use puffyrs::{flags::FlagParser, io};
+use puffyrs::{flags::FlagParser, io, progname, sig, strtonum};
+use puffyrs::signal_watch;
+use std::sync::atomic::Ordering;
 
 const CTL_KERN: c_int = 1;
 const KERN_WATCHDOG: c_int = 64;
 const KERN_WATCHDOG_PERIOD: c_int = 1;
 const KERN_WATCHDOG_AUTO: c_int = 2;
 
-static QUIT: AtomicBool = AtomicBool::new(false);
-
-extern "C" fn sighdlr(_signum: c_int) {
-    QUIT.store(true, Ordering::Relaxed);
-}
-
 fn usage() -> ! {
-    let args: Vec<String> = std::env::args().collect();
-    let progname = args.first()
-        .and_then(|a| Path::new(a).file_name())
-        .and_then(|n| n.to_str())
-        .unwrap_or("watchdogd");
     io::die(1, &format!(
         "usage: {} [-dnq] [-i interval] [-p period]",
-        progname
+        progname::getprogname()
     ));
-}
-
-fn strtonum(s: &str, min: i64, max: i64) -> Result<u32, &'static str> {
-    match s.parse::<i64>() {
-        Ok(n) if n < min => Err("too small"),
-        Ok(n) if n > max => Err("too large"),
-        Ok(n) => Ok(n as u32),
-        Err(_) => Err("invalid"),
-    }
 }
 
 unsafe fn restore(mib: &mut [c_int; 3], speriod: c_int, sauto: c_int) {
@@ -82,15 +62,19 @@ fn main() {
     let mut period: u32 = 30;
 
     if let Some(v) = parsed.string('i') {
-        interval = strtonum(v, 1, 86400).unwrap_or_else(|errstr| {
-            io::die(1, &format!("interval is {}: {}", errstr, v));
-        });
+        interval = strtonum::strtonum(v, 1, 86400)
+            .map(|n| n as u32)
+            .unwrap_or_else(|errstr| {
+                io::die(1, &format!("interval is {}: {}", errstr, v));
+            });
     }
 
     if let Some(v) = parsed.string('p') {
-        period = strtonum(v, 2, 86400).unwrap_or_else(|errstr| {
-            io::die(1, &format!("period is {}: {}", errstr, v));
-        });
+        period = strtonum::strtonum(v, 2, 86400)
+            .map(|n| n as u32)
+            .unwrap_or_else(|errstr| {
+                io::die(1, &format!("period is {}: {}", errstr, v));
+            });
     }
 
     if interval == 0 {
@@ -197,13 +181,14 @@ fn main() {
         libc::setrlimit(RLIMIT_STACK, &rlim);
         libc::mlockall(MCL_CURRENT | MCL_FUTURE);
         libc::setpriority(PRIO_PROCESS, libc::getpid() as libc::id_t, -5);
-        libc::signal(SIGTERM, sighdlr as *const () as libc::sighandler_t);
     }
+
+    let quit = signal_watch!(SIGTERM => QUIT, on_term);
 
     let mut retval: i32 = 0;
     mib[2] = KERN_WATCHDOG_PERIOD;
 
-    while !QUIT.load(Ordering::Relaxed) {
+    while !sig::raised(quit) {
         unsafe {
             if libc::sysctl(
                 mib.as_mut_ptr(),
@@ -214,7 +199,7 @@ fn main() {
                 std::mem::size_of::<u32>(),
             ) == -1
             {
-                QUIT.store(true, Ordering::Relaxed);
+                quit.store(true, Ordering::Relaxed);
                 retval = 1;
             }
         }
