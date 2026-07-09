@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::process;
 
-use puffyrs::{flags::FlagParser, io as pio};
+use puffyrs::{flags::FlagParser, io as pio, vis};
 
 fn main() {
     let parsed = FlagParser::new()
@@ -147,7 +147,7 @@ fn cook_buf(
 
     let mut bytes = reader.bytes();
     loop {
-        let mut ch = match bytes.next() {
+        let ch = match bytes.next() {
             Some(Ok(b)) => b,
             Some(Err(e)) => {
                 read_err = Some(e);
@@ -197,20 +197,11 @@ fn cook_buf(
                 continue;
             }
         } else if vflag {
-            if !ch.is_ascii() {
-                if writer.write_all(b"M-").is_err() {
-                    pio::die(1, "stdout");
-                }
-                ch &= 0x7f;
+            if vis::write_vis_byte(&mut writer, ch).is_err() {
+                pio::die(1, "stdout");
             }
-            if ch < 0x20 || ch == 0x7f {
-                let c = if ch == 0x7f { b'?' } else { ch | 0x40 };
-                if writer.write_all(b"^").is_err() || writer.write_all(&[c]).is_err() {
-                    pio::die(1, "stdout");
-                }
-                prev = ch;
-                continue;
-            }
+            prev = if ch.is_ascii() { ch } else { ch & 0x7f };
+            continue;
         }
 
         if writer.write_all(&[ch]).is_err() {

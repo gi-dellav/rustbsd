@@ -8,3 +8,5 @@ pub mod ffi;
 pub mod flags;
 /// Convenient I/O helpers for stdout/stderr output.
 pub mod io;
+/// Byte-visibility rendering (`vis(3)` semantics, used by `cat -v`).
+pub mod vis;
