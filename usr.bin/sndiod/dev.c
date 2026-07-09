@@ -1,4 +1,4 @@
-/*	$OpenBSD: dev.c,v 1.141 2026/06/24 14:54:50 ratchov Exp $	*/
+/*	$OpenBSD: dev.c,v 1.144 2026/07/09 09:25:22 ratchov Exp $	*/
 /*
  * Copyright (c) 2008-2012 Alexandre Ratchov <alex@caoua.org>
  *
@@ -529,7 +529,7 @@ dev_sub_bcopy(struct dev *d, struct slot *s)
 void
 dev_cycle(struct dev *d)
 {
-	struct slot *s, **ps;
+	struct slot *s, *snext;
 	unsigned char *base;
 	int nsamp;
 
@@ -573,8 +573,9 @@ dev_cycle(struct dev *d)
 	}
 	if ((d->mode & MODE_REC) && d->decbuf)
 		dec_do(&d->dec, d->decbuf, (unsigned char *)d->rbuf, d->round);
-	ps = &d->slot_list;
-	while ((s = *ps) != NULL) {
+
+	for (s = d->slot_list; s != NULL; s = snext) {
+		snext = s->next;
 #ifdef DEBUG
 		logx(4, "slot%zu: running, skip = %d", s - slot_array, s->skip);
 #endif
@@ -586,7 +587,6 @@ dev_cycle(struct dev *d)
 		slot_skip(s);
 		if (s->skip < 0) {
 			s->skip++;
-			ps = &s->next;
 			continue;
 		}
 
@@ -607,14 +607,14 @@ dev_cycle(struct dev *d)
 			 * layer, so s->mix.buf.used == 0 and we can
 			 * destroy the buffer
 			 */
-			*ps = s->next;
-			s->pstate = SLOT_INIT;
-			s->ops->eof(s->arg);
-			slot_freebufs(s);
-			dev_mix_adjvol(d);
+
 #ifdef DEBUG
 			logx(3, "slot%zu: drained", s - slot_array);
 #endif
+			slot_detach(s);
+			s->pstate = SLOT_INIT;
+			s->ops->eof(s->arg);
+			slot_freebufs(s);
 			continue;
 		}
 
@@ -636,13 +636,10 @@ dev_cycle(struct dev *d)
 			}
 			if (s->xrun == XRUN_IGNORE) {
 				s->delta -= s->round;
-				ps = &s->next;
 			} else if (s->xrun == XRUN_SYNC) {
 				s->skip++;
-				ps = &s->next;
 			} else if (s->xrun == XRUN_ERROR) {
 				s->ops->exit(s->arg);
-				*ps = s->next;
 			} else {
 #ifdef DEBUG
 				logx(0, "slot%zu: bad xrun mode", s - slot_array);
@@ -676,7 +673,6 @@ dev_cycle(struct dev *d)
 			if (s->pstate != SLOT_STOP)
 				s->ops->fill(s->arg);
 		}
-		ps = &s->next;
 	}
 	if ((d->mode & MODE_PLAY) && d->encbuf) {
 		enc_do(&d->enc, (unsigned char *)DEV_PBUF(d),
@@ -1618,6 +1614,7 @@ slot_detach(struct slot *s)
 			s->sub.encbuf = NULL;
 		}
 		if (s->sub.resampbuf) {
+			resamp_done(&s->sub.resamp);
 			xfree(s->sub.resampbuf);
 			s->sub.resampbuf = NULL;
 		}
@@ -1629,6 +1626,7 @@ slot_detach(struct slot *s)
 			s->mix.decbuf = NULL;
 		}
 		if (s->mix.resampbuf) {
+			resamp_done(&s->mix.resamp);
 			xfree(s->mix.resampbuf);
 			s->mix.resampbuf = NULL;
 		}
