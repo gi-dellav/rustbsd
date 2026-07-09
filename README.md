@@ -32,10 +32,26 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 ## What was rewritten?
 - `echo`
 - `chroot`
+- `cat`
 
-## Soon to be rewritten...
+## Will be rewritten next...
+- `cp`
+- `mv`
+- `dd`
+- `kill`
+- `ls`
+- `rm`
+- `rmdir`
+- `sleep`
+- `ps`
+
+## To be rewritten in the future...
 - `bc`
 - `csh`
+- `md5`
+- `sha*`
+- `sync`
+- `tar`
 
 ## How can I contribute?
 

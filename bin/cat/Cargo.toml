@@ -1,0 +1,11 @@
+[package]
+name = "catrs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cat"
+path = "src/main.rs"
+
+[dependencies]
+puffyrs = { path = "../../puffyrs" }

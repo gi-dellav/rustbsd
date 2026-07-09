@@ -1,6 +1,10 @@
-#	$OpenBSD: Makefile,v 1.4 2017/02/19 00:46:57 jca Exp $
+#	$OpenBSD$
 
 PROG=	cat
+CLEANFILES+=	target
 
+${PROG}:
+	cargo build --release
+	ln -sf target/release/${PROG} ${PROG}
 
 .include <bsd.prog.mk>
