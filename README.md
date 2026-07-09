@@ -1,10 +1,22 @@
 # RustBSD
 
-Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
+Exactly what the title says: OpenBSD, with some parts rewritten (and some written from scratch) in Rust.
 
 **Disclaimer:** It's just for fun, obviously it's not a great idea to [take a stable set of commonly used userspace tools are rewrite it in a new programming language with no evident benefit](https://discourse.ubuntu.com/t/an-update-on-rust-coreutils/80773)...
 
 **Disclaimer:** This is fully untested software, and we expect for it not to work: nevertheless, open an issue if it doesn't work correctly (or better yet, try to fix it and send a PR)
+
+## Why is it interesting?
+
+- *Fun*: Mostly, just beacuse it's a fun experiment.
+
+- *Safe*: Some high-safety components such as `init` and `doas` benefit from an high-quality Rust reimplementation.
+
+- *Declarative*: *fdecs* is a tool for flexible declarative system for rustBSD, managing packages, configurations, scripts, daemons and databases. *(not yet implemented)*
+
+- *Data-driven*: 
+  - *Datad* is our data layer daemon, built on top of SQLite, inspired by the IBM's AS/400 design. *(not yet implemented)*
+  - *Kvdb* is our in-memory lightweight key-value database, inspired by Redis. *(not yet implemented)*
 
 ## How to build and install
 
@@ -30,11 +42,13 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 ---
 
 ## What was rewritten?
+
 - `echo`
 - `chroot`
 - `cat`
 
 ## Will be rewritten next...
+
 - `cp`
 - `mv`
 - `dd`
@@ -46,12 +60,26 @@ Exactly what the title says: OpenBSD, with some parts rewritten in Rust.
 - `ps`
 
 ## To be rewritten in the future...
-- `bc`
-- `csh`
+
 - `md5`
 - `sha*`
 - `sync`
 - `tar`
+
+## Major future rewrites...
+
+- `init`
+- `doas`
+
+## Original tools incomings...
+
+- `datad`: sqlite-based background data layer
+- `datash`: interactive shell for accessing `datad`
+- `kvdb`: in-memory key-value database
+- `kvsh`: interactive shell for accessing `kvdb`
+- `fdecs`: flexible declarative system for rustBSD installations
+
+---
 
 ## How can I contribute?
 

@@ -1,0 +1,12 @@
+[package]
+name = "watchdogd-rs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "watchdogd"
+path = "src/main.rs"
+
+[dependencies]
+puffyrs = { path = "../../puffyrs" }
+libc = "0.2"

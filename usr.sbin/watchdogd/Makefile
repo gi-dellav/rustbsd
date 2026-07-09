@@ -1,11 +1,11 @@
-# $OpenBSD: Makefile,v 1.3 2012/08/02 13:38:39 okan Exp $
+#	$OpenBSD$
 
-PROG=		watchdogd
-SRCS=		watchdogd.c
+PROG=	watchdogd
+CLEANFILES+=	target
+MAN=	watchdogd.8
 
-CFLAGS+=	-Wall
-LDSTATIC=	${STATIC}
-
-MAN=		watchdogd.8
+${PROG}:
+	cargo build --release
+	ln -sf target/release/${PROG} ${PROG}
 
 .include <bsd.prog.mk>
